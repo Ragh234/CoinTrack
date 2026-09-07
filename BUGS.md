@@ -90,3 +90,37 @@ Android dependency and doesn't need a device to test. Reproducing the exact live
 (a coin missing from the on-device cache) would have needed editing the app's Room
 database directly, which turned out to be blocked by WAL-mode complications reading the
 raw `.db` file off the device -- the unit tests are the reliable proof instead.
+
+---
+
+## 3. The watchlist had the same missing-price bug as the portfolio
+
+**Symptom**
+
+Same shape as bug #2, different screen: a coin on the watchlist that isn't in the cached
+market data at read time -- market screen hasn't loaded yet, offline, or the coin dropped
+out of the latest ticker response -- shows ₹0.00 and 0.00% instead of any indication that
+its price is simply unknown.
+
+**Cause**
+
+`WatchlistViewModel` combined the watchlist with the cached market coins and, for any
+watchlisted coin not found in the cache, built a fallback `Coin` with `currentPrice = 0.0`
+and `percentChange24h = 0.0` to satisfy the shared `Coin` type's shape. Once found, this
+was the exact pattern from bug #2 in a second place -- I only spotted it because I'd just
+fixed the same root cause in `PortfolioCalculator` and knew what to look for.
+
+**Fix**
+
+Extracted the merge logic into `WatchlistDisplayMapper`, a pure function pairing each
+watchlist entry with a `hasPriceData` flag, kept local to the watchlist feature rather
+than making `Coin.currentPrice` nullable everywhere it's used (Market screen, the
+portfolio add-holding dropdown, coin detail). `CoinListItem` -- shared between Market and
+Watchlist -- gets an optional `priceUnavailable` flag that defaults to `false`, so
+Market's rendering is untouched and only Watchlist opts in to showing "Price unavailable"
+in place of a fabricated ₹0.00.
+
+Verified on-device (added Bitcoin, confirmed the real price still renders with no
+regression) and pinned the missing-price case itself with 3 new
+`WatchlistDisplayMapperTest` cases, for the same reason as bug #2: reproducing a genuinely
+delisted coin live isn't something I can trigger without mocking the ticker API.
