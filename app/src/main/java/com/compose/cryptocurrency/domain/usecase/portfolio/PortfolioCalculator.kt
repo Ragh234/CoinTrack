@@ -6,12 +6,31 @@ import com.compose.cryptocurrency.domain.model.PortfolioSummary
 
 object PortfolioCalculator {
 
+    /**
+     * @param currentPrice null or non-positive means "no cached price for this coin right now",
+     * not "this coin is worth zero." Those are very different facts for a holding's owner, and
+     * collapsing them used to render every unpriced holding as a 100% loss.
+     */
     fun calculateHolding(
         holding: PortfolioHolding,
-        currentPrice: Double
+        currentPrice: Double?
     ): PortfolioHoldingSummary {
         val investedAmount = validAmount(holding.quantity * holding.purchasePrice)
-        val currentValue = validAmount(holding.quantity * currentPrice)
+        val hasPriceData = currentPrice != null && currentPrice.isFinite() && currentPrice > 0.0
+
+        if (!hasPriceData) {
+            return PortfolioHoldingSummary(
+                holding = holding,
+                currentPrice = null,
+                investedAmount = investedAmount,
+                currentValue = null,
+                profitLoss = null,
+                returnPercentage = null,
+                hasPriceData = false
+            )
+        }
+
+        val currentValue = validAmount(holding.quantity * currentPrice!!)
         val profitLoss = currentValue - investedAmount
         val returnPercentage = if (investedAmount > 0.0) {
             (profitLoss / investedAmount) * 100
@@ -25,16 +44,19 @@ object PortfolioCalculator {
             investedAmount = investedAmount,
             currentValue = currentValue,
             profitLoss = profitLoss,
-            returnPercentage = returnPercentage
+            returnPercentage = returnPercentage,
+            hasPriceData = true
         )
     }
 
     fun calculateSummary(holdings: List<PortfolioHoldingSummary>): PortfolioSummary {
+        val priced = holdings.filter { it.hasPriceData }
         val totalInvested = holdings.sumOf { it.investedAmount }
-        val currentValue = holdings.sumOf { it.currentValue }
-        val profitLoss = currentValue - totalInvested
-        val returnPercentage = if (totalInvested > 0.0) {
-            (profitLoss / totalInvested) * 100
+        val pricedInvested = priced.sumOf { it.investedAmount }
+        val currentValue = priced.sumOf { it.currentValue ?: 0.0 }
+        val profitLoss = currentValue - pricedInvested
+        val returnPercentage = if (pricedInvested > 0.0) {
+            (profitLoss / pricedInvested) * 100
         } else {
             0.0
         }
@@ -44,7 +66,8 @@ object PortfolioCalculator {
             currentValue = currentValue,
             profitLoss = profitLoss,
             returnPercentage = returnPercentage,
-            holdings = holdings
+            holdings = holdings,
+            unpricedHoldingsCount = holdings.size - priced.size
         )
     }
 

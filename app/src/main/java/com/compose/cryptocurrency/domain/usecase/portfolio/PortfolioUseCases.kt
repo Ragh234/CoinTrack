@@ -20,7 +20,7 @@ class PortfolioUseCases @Inject constructor(
                 val summaries = holdings.map { holding ->
                     PortfolioCalculator.calculateHolding(
                         holding = holding,
-                        currentPrice = prices[holding.coinId]?.currentPrice ?: 0.0
+                        currentPrice = prices[holding.coinId]?.currentPrice
                     )
                 }
                 PortfolioCalculator.calculateSummary(summaries)

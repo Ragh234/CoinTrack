@@ -70,6 +70,14 @@ fun PortfolioScreen(
                 SummaryRow("Invested", formatInr(state.summary.totalInvested))
                 SummaryRow("Profit/Loss", formatInr(state.summary.profitLoss))
                 SummaryRow("Return", formatPercent(state.summary.returnPercentage))
+                if (state.summary.unpricedHoldingsCount > 0) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "${state.summary.unpricedHoldingsCount} holding(s) missing a live price -- excluded from the totals above.",
+                        color = MaterialTheme.colors.secondary,
+                        style = MaterialTheme.typography.caption
+                    )
+                }
             }
         }
 
@@ -126,7 +134,11 @@ private fun SummaryRow(label: String, value: String) {
 
 @Composable
 private fun HoldingItem(holding: PortfolioHoldingSummary, onRemove: () -> Unit) {
-    val profitColor = if (holding.profitLoss >= 0) Color(0xFF0F9D58) else MaterialTheme.colors.error
+    val profitColor = when {
+        !holding.hasPriceData -> MaterialTheme.colors.secondary
+        (holding.profitLoss ?: 0.0) >= 0 -> Color(0xFF0F9D58)
+        else -> MaterialTheme.colors.error
+    }
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(8.dp),
@@ -148,8 +160,12 @@ private fun HoldingItem(holding: PortfolioHoldingSummary, onRemove: () -> Unit) 
                     )
                 }
                 Column(horizontalAlignment = Alignment.End) {
-                    Text(text = formatInr(holding.currentValue), color = MaterialTheme.colors.primaryVariant)
-                    Text(text = formatPercent(holding.returnPercentage), color = profitColor)
+                    if (holding.hasPriceData) {
+                        Text(text = formatInr(holding.currentValue!!), color = MaterialTheme.colors.primaryVariant)
+                        Text(text = formatPercent(holding.returnPercentage!!), color = profitColor)
+                    } else {
+                        Text(text = "Price unavailable", color = profitColor)
+                    }
                 }
             }
             TextButton(onClick = onRemove, modifier = Modifier.align(Alignment.End)) {
