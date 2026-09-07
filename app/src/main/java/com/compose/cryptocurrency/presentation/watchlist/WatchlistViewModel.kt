@@ -4,8 +4,8 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.compose.cryptocurrency.domain.model.Coin
 import com.compose.cryptocurrency.domain.usecase.alllcoins.GetCachedCoinsUseCase
+import com.compose.cryptocurrency.domain.usecase.watchlist.WatchlistDisplayMapper
 import com.compose.cryptocurrency.domain.usecase.watchlist.WatchlistUseCases
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.combine
@@ -25,19 +25,7 @@ class WatchlistViewModel @Inject constructor(
     init {
         watchlistUseCases.observeWatchlist()
             .combine(getCachedCoinsUseCase()) { watchlist, cachedCoins ->
-                val cachedById = cachedCoins.associateBy { it.id }
-                watchlist.map { saved ->
-                    cachedById[saved.coinId] ?: Coin(
-                        id = saved.coinId,
-                        name = saved.name,
-                        symbol = saved.symbol,
-                        rank = 0,
-                        currentPrice = 0.0,
-                        percentChange24h = 0.0,
-                        marketCap = null,
-                        imageUrl = saved.imageUrl
-                    )
-                }
+                WatchlistDisplayMapper.merge(watchlist, cachedCoins)
             }
             .onEach { coins -> _state.value = WatchlistState(coins) }
             .launchIn(viewModelScope)

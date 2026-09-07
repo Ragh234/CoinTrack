@@ -1,7 +1,7 @@
 package com.compose.cryptocurrency.presentation.watchlist
 
-import com.compose.cryptocurrency.domain.model.Coin
+import com.compose.cryptocurrency.domain.usecase.watchlist.WatchlistDisplayItem
 
 data class WatchlistState(
-    val coins: List<Coin> = emptyList()
+    val coins: List<WatchlistDisplayItem> = emptyList()
 )

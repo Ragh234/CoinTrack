@@ -39,10 +39,14 @@ fun WatchlistScreen(
             )
         } else {
             LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(state.coins) { coin ->
-                    CoinListItem(coin = coin) {
-                        navController.navigate(Screen.CoinDetailScreen.route + "/${coin.id}")
-                    }
+                items(state.coins) { item ->
+                    CoinListItem(
+                        coin = item.coin,
+                        priceUnavailable = !item.hasPriceData,
+                        onItemClick = { coin ->
+                            navController.navigate(Screen.CoinDetailScreen.route + "/${coin.id}")
+                        }
+                    )
                 }
             }
         }

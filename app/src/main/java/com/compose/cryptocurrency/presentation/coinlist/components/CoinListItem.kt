@@ -31,7 +31,9 @@ import com.compose.cryptocurrency.presentation.commonview.formatPercent
 
 @Composable
 fun CoinListItem(
-    coin: Coin, onItemClick: (Coin) -> Unit
+    coin: Coin,
+    onItemClick: (Coin) -> Unit,
+    priceUnavailable: Boolean = false
 ) {
 
     Card(
@@ -66,18 +68,27 @@ fun CoinListItem(
                 )
             }
             Column(horizontalAlignment = androidx.compose.ui.Alignment.End) {
-                Text(
-                    text = formatInr(coin.currentPrice),
-                    color = MaterialTheme.colors.primaryVariant,
-                    textAlign = TextAlign.End,
-                    style = MaterialTheme.typography.body1
-                )
-                Text(
-                    text = formatPercent(coin.percentChange24h),
-                    color = if (coin.percentChange24h >= 0) Color(0xFF0F9D58) else MaterialTheme.colors.error,
-                    textAlign = TextAlign.End,
-                    style = MaterialTheme.typography.body2
-                )
+                if (priceUnavailable) {
+                    Text(
+                        text = "Price unavailable",
+                        color = MaterialTheme.colors.secondary,
+                        textAlign = TextAlign.End,
+                        style = MaterialTheme.typography.body2
+                    )
+                } else {
+                    Text(
+                        text = formatInr(coin.currentPrice),
+                        color = MaterialTheme.colors.primaryVariant,
+                        textAlign = TextAlign.End,
+                        style = MaterialTheme.typography.body1
+                    )
+                    Text(
+                        text = formatPercent(coin.percentChange24h),
+                        color = if (coin.percentChange24h >= 0) Color(0xFF0F9D58) else MaterialTheme.colors.error,
+                        textAlign = TextAlign.End,
+                        style = MaterialTheme.typography.body2
+                    )
+                }
             }
 
         }
